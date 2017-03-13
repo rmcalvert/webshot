@@ -43,6 +43,7 @@ module Webshot
         full = opts.fetch(:full, true)
         selector = opts.fetch(:selector, nil)
         allowed_status_codes = opts.fetch(:allowed_status_codes, [])
+        format   = opts.fetch(:format, :png) #:png, :jpeg, :gif
 
         # Reset session before visiting url
         Capybara.reset_sessions! unless @session_started
@@ -60,7 +61,7 @@ module Webshot
           fail WebshotError, "Could not fetch page: #{url.inspect}, error code: #{page.driver.status_code}"
         end
 
-        tmp = Tempfile.new(["webshot", ".png"])
+        tmp = Tempfile.new(["webshot", ".#{format}"])
         tmp.close
         begin
           screenshot_opts = { full: full }
