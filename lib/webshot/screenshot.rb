@@ -1,3 +1,4 @@
+require "fileutils"
 require "singleton"
 
 module Webshot
@@ -44,6 +45,8 @@ module Webshot
         selector = opts.fetch(:selector, nil)
         allowed_status_codes = opts.fetch(:allowed_status_codes, [])
         format   = opts.fetch(:format, :png) #:png, :jpeg, :gif
+        screenshot_filename = opts.fetch(:screenshot_filename, nil)
+        bypass_thumb = opts.fetch(:bypass_thumb, false)
 
         # Reset session before visiting url
         Capybara.reset_sessions! unless @session_started
@@ -70,24 +73,30 @@ module Webshot
           # Save screenshot to file
           page.driver.save_screenshot(tmp.path, screenshot_opts)
 
-          # Resize screenshot
-          thumb = MiniMagick::Image.open(tmp.path)
-          if block_given?
-            # Customize MiniMagick options
-            yield thumb
-          else
-            thumb.combine_options do |c|
-              c.thumbnail "#{width}x"
-              c.background "white"
-              c.extent "#{width}x#{height}"
-              c.gravity gravity
-              c.quality quality
-            end
+          if(!screenshot_filename.nil?)
+            FileUtils.cp tmp.path, screenshot_filename
           end
 
-          # Save thumbnail
-          thumb.write path
-          thumb
+          unless(bypass_thumb)
+            # Resize screenshot
+            thumb = MiniMagick::Image.open(tmp.path)
+            if block_given?
+              # Customize MiniMagick options
+              yield thumb
+            else
+              thumb.combine_options do |c|
+                c.thumbnail "#{width}x"
+                c.background "white"
+                c.extent "#{width}x#{height}"
+                c.gravity gravity
+                c.quality quality
+              end
+            end
+
+            # Save thumbnail
+            thumb.write path
+            thumb
+          end
         ensure
           tmp.unlink
         end
